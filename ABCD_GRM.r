@@ -33,35 +33,33 @@ if (!file.exists(gds.fn)){
 pruned_file = paste0(fn_prefix, '_prunned.snps')
 kinship_file = paste0(fn_prefix, '_kinship.RData')
 
-if (!file.exists(pruned_file) | !file.exists(kinship_file)){
-    gds <- snpgdsOpen(gds.fn)
-    ## Prunned set of SNPs
-    if (!file.exists(pruned_file)){
-        print('Generating prunned set list')
-        snpset <- snpgdsLDpruning(gds, method="corr", slide.max.bp=10e6, 
-                          ld.threshold=sqrt(0.1), verbose=FALSE)
-        pruned <- unlist(snpset, use.names=FALSE)
-        print(paste0(length(pruned), ' pruned snps identified'))
-        write(pruned, pruned_file)
-        print(paste0('Saved to ', pruned_file))
-    }else{
-        pruned = read.csv(pruned_file, header=F)$V1
-    }
-    ## Kinship matrix
-    if (!file.exists(kinship_file)){
-        print('Generating kinship matrix')
-        ibd.robust = snpgdsIBDKING(gds)
-        save(ibd.robust, file=kinship_file)
-        print(paste0('Saved kinship matrix to ', kinship_file))
-    }else{
-        # Load File
-        load(kinship_file)
-    }
-    KINGmat = as(ibd.robust$kinship, 'dsyMatrix')
-    row.names(KINGmat) = ibd.robust$sample.id
-    colnames(KINGmat) = ibd.robust$sample.id
-    snpgdsClose(gds)
+gds <- snpgdsOpen(gds.fn)
+## Prunned set of SNPs
+if (!file.exists(pruned_file)){
+    print('Generating prunned set list')
+    snpset <- snpgdsLDpruning(gds, method="corr", slide.max.bp=10e6, 
+                      ld.threshold=sqrt(0.1), verbose=FALSE)
+    pruned <- unlist(snpset, use.names=FALSE)
+    print(paste0(length(pruned), ' pruned snps identified'))
+    write(pruned, pruned_file)
+    print(paste0('Saved to ', pruned_file))
+}else{
+    pruned = read.csv(pruned_file, header=F)$V1
 }
+## Kinship matrix
+if (!file.exists(kinship_file)){
+    print('Generating kinship matrix')
+    ibd.robust = snpgdsIBDKING(gds)
+    save(ibd.robust, file=kinship_file)
+    print(paste0('Saved kinship matrix to ', kinship_file))
+}else{
+    # Load File
+    load(kinship_file)
+}
+KINGmat = as(ibd.robust$kinship, 'dsyMatrix')
+row.names(KINGmat) = ibd.robust$sample.id
+colnames(KINGmat) = ibd.robust$sample.id
+snpgdsClose(gds)
 
 ###################### PCA-AiR #################
 # read in GDS data
@@ -123,3 +121,4 @@ mypcrelate$kinBtwn$GeneticRel = 2*mypcrelate$kinBtwn$kin
 grm_long_out = paste0(fn_prefix, '_PCRelate_long.tsv')
 cols_to_save = c('ID1','ID2','k0','k1','k2','nsnp','PI_HAT','GeneticRel')
 write.table(mypcrelate$kinBtwn[, cols_to_save], grm_long_out, quote=FALSE, sep='\t', row.names=FALSE)
+print(paste0('Saved long GRM to ', grm_long_out))
