@@ -84,12 +84,6 @@ write.table(pcs, pcair_file, quote=FALSE, sep='\t', col.names=NA)
 # Output from PC-AiR
 summary(mypcair) 
 
-# plot top 2 PCs
-plot(mypcair)
-# plot PCs 3 and 4
-plot(mypcair, vx = 3, vy = 4)
-
-
 ###################### PCA-Relate #################
 pcrelate_file = paste0(fn_prefix, '_pcrelate.RData')
 if (!file.exists(pcrelate_file)){
