@@ -4,9 +4,45 @@ library(GENESIS)
 library(ggplot2)
 library(qqman)
 
-# This script runs population and relatedness inference using GENESIS (https://github.com/UW-GAC/GENESIS) 
-# on ABCD data. The approach is considered best practice for performing GWAS
-# in samples of mixed ancestry with a high degree of relatives and is used by both the TOPMED consortium and PAGE Study.
+# Function to generate loading as not included in GENESIS
+pca_loadings = function(gdsobj,
+                        kinobj,
+                        divobj,
+                        snp.include,
+                        kin.thresh = 2^(-11/2),
+                        div.thresh = -2^(-11/2),
+                        unrel.set = NULL,
+                        sample.include = NULL,
+                        num.cores = 1L,
+                        verbose = FALSE){
+    print('Paritioning samples into related and unrelated sets')
+    part <- pcairPartition(kinobj = kinobj, divobj = divobj,
+        kin.thresh = kin.thresh, div.thresh = div.thresh,
+        unrel.set = unrel.set, sample.include = sample.include,
+        verbose = verbose)
+
+    print('Computing PCA on unrelated samples')
+    pca.unrel <- suppressMessages(
+        snpgdsPCA(gdsobj, sample.id = part$unrels, snp.id = snp.include,
+                  num.thread = num.cores, verbose = verbose)
+    )
+    
+    print('Computing SNP loadings')
+    snp.load <- suppressMessages(
+        snpgdsPCASNPLoading(pca.unrel, gdsobj = gdsobj,
+                            num.thread = num.cores, verbose = verbose)
+    )
+    # Create data frame of loadings
+    loadings = as.data.frame(t(snp.load$snploading), 
+                            row.names=snp.load$snp.id)
+    colnames(loadings) = paste0('PC', 1:ncol(loadings))
+
+    return(loadings)
+}
+
+# This script runs GENESIS (https://github.com/UW-GAC/GENESIS) on ABCD data for running a GWAS of 
+# crystallized composite from the NIH toolbox. The approach is considered best practice for performing GWAS
+# in samples of mixed ancestry with a high degree of relatives and is advocated for by the PAGE consortium.
 # The code essentially lifts from the two tutorials in the package documentation 
 # (http://bioconductor.org/packages/release/bioc/vignettes/GENESIS/inst/doc/pcair.html and
 # http://bioconductor.org/packages/devel/bioc/vignettes/GENESIS/inst/doc/assoc_test.html)
@@ -38,7 +74,7 @@ gds <- snpgdsOpen(gds.fn)
 if (!file.exists(pruned_file)){
     print('Generating prunned set list')
     snpset <- snpgdsLDpruning(gds, method="corr", slide.max.bp=10e6, 
-                      ld.threshold=sqrt(0.1), verbose=FALSE)
+                        ld.threshold=sqrt(0.1), verbose=FALSE)
     pruned <- unlist(snpset, use.names=FALSE)
     print(paste0(length(pruned), ' pruned snps identified'))
     write(pruned, pruned_file)
@@ -81,8 +117,10 @@ colnames(pcs) = paste0('C', seq(dim(pcs)[2]))
 pcair_file = paste0(fn_prefix, '_pcair.tsv')
 write.table(pcs, pcair_file, quote=FALSE, sep='\t', col.names=NA)
 
-# Output from PC-AiR
-summary(mypcair) 
+# Generate loadings
+loadings = pca_loadings(ABCD_geno@handler, kinobj = KINGmat, divobj = KINGmat, 
+                 snp.include = pruned)
+write.table(loadings, paste0(fn_prefix, '_pcair_loadings.tsv'), quote=FALSE, sep='\t', col.names=NA)
 
 ###################### PCA-Relate #################
 pcrelate_file = paste0(fn_prefix, '_pcrelate.RData')
