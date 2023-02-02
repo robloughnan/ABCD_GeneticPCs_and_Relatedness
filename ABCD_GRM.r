@@ -4,6 +4,19 @@ library(GENESIS)
 library(ggplot2)
 library(qqman)
 
+# This script runs GENESIS (https://github.com/UW-GAC/GENESIS) on ABCD data for running a GWAS of 
+# crystallized composite from the NIH toolbox. The approach is considered best practice for performing GWAS
+# in samples of mixed ancestry with a high degree of relatives and is advocated for by the PAGE consortium.
+# The code essentially lifts from the two tutorials in the package documentation 
+# (http://bioconductor.org/packages/release/bioc/vignettes/GENESIS/inst/doc/pcair.html and
+# http://bioconductor.org/packages/devel/bioc/vignettes/GENESIS/inst/doc/assoc_test.html)
+# The main contributions this framework has over other approaches are:
+# 1) PC-AIR: computing genetic PCs in sample of individuals with relatedness and ancestry admixture.
+# 2) PC-Relate: compute genetic relateness in sample of mixed ancestries/population structure.
+
+# Genetics (path to PLINK files)
+fn_prefix='/path/to/non_imputed/ABCD_20220428.updated.nodups.curated'
+
 # Function to generate loading as not included in GENESIS
 pca_loadings = function(gdsobj,
                         kinobj,
@@ -39,19 +52,6 @@ pca_loadings = function(gdsobj,
 
     return(loadings)
 }
-
-# This script runs GENESIS (https://github.com/UW-GAC/GENESIS) on ABCD data for running a GWAS of 
-# crystallized composite from the NIH toolbox. The approach is considered best practice for performing GWAS
-# in samples of mixed ancestry with a high degree of relatives and is advocated for by the PAGE consortium.
-# The code essentially lifts from the two tutorials in the package documentation 
-# (http://bioconductor.org/packages/release/bioc/vignettes/GENESIS/inst/doc/pcair.html and
-# http://bioconductor.org/packages/devel/bioc/vignettes/GENESIS/inst/doc/assoc_test.html)
-# The main contributions this framework has over other approaches are:
-# 1) PC-AIR: computing genetic PCs in sample of individuals with relatedness and ancestry admixture.
-# 2) PC-Relate: compute genetic relateness in sample of mixed ancestries/population structure.
-
-# Genetics (path to PLINK files)
-fn_prefix='/path/to/non_imputed/ABCD_20220428.updated.nodups.curated'
 
 ###################### Create GDS file if one does not exist #################
 gds.fn=paste0(fn_prefix, '.gds')
