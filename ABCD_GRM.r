@@ -1,8 +1,7 @@
 library(SNPRelate)
 library(GWASTools)
 library(GENESIS)
-library(ggplot2)
-library(qqman)
+library(optparse)
 
 # This script runs GENESIS (https://github.com/UW-GAC/GENESIS) on ABCD data for running a GWAS of 
 # crystallized composite from the NIH toolbox. The approach is considered best practice for performing GWAS
@@ -14,8 +13,22 @@ library(qqman)
 # 1) PC-AIR: computing genetic PCs in sample of individuals with relatedness and ancestry admixture.
 # 2) PC-Relate: compute genetic relateness in sample of mixed ancestries/population structure.
 
-# Genetics (path to PLINK files)
-fn_prefix='/path/to/non_imputed/ABCD_20220428.updated.nodups.curated'
+## Usage 
+# Rscript ABCD_GRM.r --bfile /path/to/plinkfile/ABCD_202209.updated.nodups.curated.cleaned_indivs --force
+
+# Genetics (plink format)
+option_list = list(
+    make_option(c("-b", "--bfile"), type="character", default=NULL, 
+                help="Merged plink bfile prefix", metavar="character"),
+    make_option(c("--force"), action="store_true", default=FALSE,
+                help="Force overwrite of existing files", metavar="character")
+
+); 
+ 
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
+fn_prefix = opt$bfile
 
 # Function to generate loading as not included in GENESIS
 pca_loadings = function(gdsobj,
@@ -56,7 +69,7 @@ pca_loadings = function(gdsobj,
 ###################### Create GDS file if one does not exist #################
 gds.fn=paste0(fn_prefix, '.gds')
 # If gds file does not exist create it
-if (!file.exists(gds.fn)){
+if (!file.exists(gds.fn) | opt$force){
     print('Generating and saving GDS')
     snpgdsBED2GDS(bed.fn = paste0(fn_prefix, '.bed'),
     bim.fn = paste0(fn_prefix, '.bim'),
@@ -71,7 +84,7 @@ kinship_file = paste0(fn_prefix, '_kinship.RData')
 
 gds <- snpgdsOpen(gds.fn)
 ## Prunned set of SNPs
-if (!file.exists(pruned_file)){
+if (!file.exists(pruned_file) | opt$force){
     print('Generating prunned set list')
     snpset <- snpgdsLDpruning(gds, method="corr", slide.max.bp=10e6, 
                         ld.threshold=sqrt(0.1), verbose=FALSE)
@@ -83,7 +96,7 @@ if (!file.exists(pruned_file)){
     pruned = read.csv(pruned_file, header=F)$V1
 }
 ## Kinship matrix
-if (!file.exists(kinship_file)){
+if (!file.exists(kinship_file) | opt$force){
     print('Generating kinship matrix')
     ibd.robust = snpgdsIBDKING(gds)
     save(ibd.robust, file=kinship_file)
@@ -112,6 +125,10 @@ pcair_file = paste0(fn_prefix, '_pcair.RData')
 save(mypcair, file=pcair_file)
 print(paste0('Saved pcair ', pcair_file))
 
+# Save unrelated individuals
+unrel_file = paste0(fn_prefix, '_unrelateds.txt')
+write.table(mypcair$unrels, unrel_file, quote=FALSE, col.names=FALSE, row.names=FALSE)
+
 pcs = mypcair$vectors
 colnames(pcs) = paste0('C', seq(dim(pcs)[2]))
 pcair_file = paste0(fn_prefix, '_pcair.tsv')
@@ -124,7 +141,7 @@ write.table(loadings, paste0(fn_prefix, '_pcair_loadings.tsv'), quote=FALSE, sep
 
 ###################### PCA-Relate #################
 pcrelate_file = paste0(fn_prefix, '_pcrelate.RData')
-if (!file.exists(pcrelate_file)){
+if (!file.exists(pcrelate_file) | opt$force){
     print('Generating PC-Relate')
     ABCD_genoData <- GenotypeBlockIterator(ABCD_genoData, snpInclude=pruned)
     mypcrelate <- pcrelate(ABCD_genoData, pcs = mypcair$vectors[,1:2], 
