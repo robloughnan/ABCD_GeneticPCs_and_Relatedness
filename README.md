@@ -1,5 +1,9 @@
 # ABCD_GeneticPCs_and_Relatedness
-This is a repository containing the script (`ABCD_GRM.r`) used to compute genetic PCs (Principal Components) and relatedness for ABCD data release 5.0. This was performed using the GENESIS<sup>1</sup> package in R (https://bioconductor.org/packages/release/bioc/html/GENESIS.html) on non-imputed data. This package contains PC-Air<sup>2</sup> and PC-Relate<sup>3</sup> methods for computing genetic PCs and relatedness respecitvely in samples with large ancestry admixture and relatedness. 
+This is a repository containing the script (`ABCD_GRM.r`) used to compute genetic PCs (Principal Components) and relatedness for ABCD data release 5.0. This was performed using the GENESIS<sup>1</sup> package in R (https://bioconductor.org/packages/release/bioc/html/GENESIS.html) on non-imputed data. This package contains PC-Air<sup>2</sup> and PC-Relate<sup>3</sup> methods for computing genetic PCs and relatedness respecitvely in samples with large ancestry admixture and relatedness. Example usage (after installing relevant libraries: `SNPRelate`, `GWASTools`, `GENESIS` and `optparse`):
+
+```
+Rscript ABCD_GRM.r --bfile /path/to/plinkfile/ABCD_202209.updated.nodups.curated.cleaned_indivs --force
+```
 
 ## Citations
 1.  Gogarten, S. M. et al. Genetic association testing using the GENESIS R/Bioconductor package. Bioinformatics 35, 5346–5348 (2019).
